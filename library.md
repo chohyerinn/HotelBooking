@@ -4,7 +4,7 @@ This document explains the additional Python and scikit-learn tools used in the 
 
 ## `ColumnTransformer`
 
-In this project, `ColumnTransformer` was used in the classification modeling and model comparison steps.
+`ColumnTransformer` was used in the classification modeling and model comparison steps.
 
 `ColumnTransformer` applies different preprocessing steps to selected groups of columns within one object. It is used because numeric booking fields require imputation and scaling, while categorical booking fields require imputation and encoding.
 
@@ -16,7 +16,7 @@ Parameters used:
 
 ## `Pipeline`
 
-In this project, `Pipeline` was used to connect preprocessing and classification during model evaluation.
+`Pipeline` was used to connect preprocessing and classification during model evaluation.
 
 `Pipeline` connects preprocessing steps and a model in a fixed order. In cross-validation, the preprocessing steps are fitted on each training fold only, which helps prevent data leakage from validation data.
 
@@ -28,7 +28,7 @@ Parameters used:
 
 ## `SimpleImputer`
 
-In this project, `SimpleImputer` was used as part of the preprocessing steps for classification models.
+`SimpleImputer` was used as part of the preprocessing steps for classification models.
 
 `SimpleImputer` replaces remaining missing values before a model is fitted. This allows every transformed row to be passed into scikit-learn models without missing-value errors.
 
@@ -39,7 +39,7 @@ Parameters used:
 
 ## `StratifiedKFold`
 
-In this project, `StratifiedKFold` was used to evaluate classification models consistently.
+`StratifiedKFold` was used to evaluate classification models consistently.
 
 `StratifiedKFold` creates cross-validation folds while preserving approximately the same cancellation and non-cancellation ratio in every fold. Regular `KFold` splits rows without guaranteeing this class balance.
 
@@ -55,7 +55,7 @@ Method used:
 
 ## `balanced_accuracy_score`
 
-In this project, `balanced_accuracy_score` was used when comparing classification performance.
+`balanced_accuracy_score` was used when comparing classification performance.
 
 `balanced_accuracy_score` evaluates a classifier by averaging recall for each class. It is useful here because canceled and non-canceled bookings do not occur in exactly equal proportions.
 
@@ -66,7 +66,7 @@ Parameters used:
 
 ## `RocCurveDisplay`
 
-In this project, `RocCurveDisplay` was used to compare the classification models visually.
+`RocCurveDisplay` was used to compare the classification models visually.
 
 `RocCurveDisplay` visualizes the trade-off between true positive rate and false positive rate across classification thresholds.
 
@@ -80,7 +80,7 @@ Method and parameters used:
 
 ## `silhouette_score`
 
-In this project, `silhouette_score` was used when selecting an appropriate number of clusters.
+`silhouette_score` was used when selecting an appropriate number of clusters.
 
 `silhouette_score` measures whether samples are close to their assigned cluster and separated from other clusters. Larger scores indicate clearer clustering structure.
 
@@ -93,7 +93,7 @@ Parameters used:
 
 ## `PCA`
 
-In this project, `PCA` was used to visualize booking clusters in two dimensions.
+`PCA` was used to visualize booking clusters in two dimensions.
 
 `PCA` reduces several numeric clustering features to a smaller set of components that retain major variation in the data. Here it is used only to display clusters in a two-dimensional scatter plot.
 
@@ -102,19 +102,9 @@ Parameters and method used:
 * `n_components=2`: creates two plotted axes, `PC1` and `PC2`.
 * `fit_transform(X_scaled)`: learns the projection from scaled features and transforms the rows.
 
-## `MinMaxScaler`
-
-In this project, `MinMaxScaler` was tested as an alternative numeric scaling method.
-
-`MinMaxScaler` rescales numeric values into a fixed range. With default settings, the range is 0 to 1. It is compared with `StandardScaler`, which centers values around zero and scales them by standard deviation instead of using a fixed range.
-
-Parameters used:
-
-* `MinMaxScaler()`: uses the default `feature_range=(0, 1)`.
-
 ## `OrdinalEncoder`
 
-In this project, `OrdinalEncoder` was tested as an alternative categorical encoding method.
+`OrdinalEncoder` was tested as an alternative categorical encoding method.
 
 `OrdinalEncoder` converts each categorical value to a numeric code. It is evaluated as an alternative to one-hot encoding in the model comparison function.
 
