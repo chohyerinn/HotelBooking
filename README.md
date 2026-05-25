@@ -1,41 +1,136 @@
 # Hotel Booking Cancellation Prediction
 
-## Project Objective
+## Overview
 
-This project aims to predict hotel booking cancellations and identify patterns associated with cancellation behavior. Cancellations can negatively affect hotel revenue and operational efficiency by creating uncertainty in room allocation, pricing, and overbooking decisions. By estimating cancellation risk in advance, hotels can improve reservation management and support more effective operational decision-making.
+This project analyzes hotel booking data to predict whether a reservation will be canceled using machine learning models.
 
-In addition, this project applies clustering analysis to identify distinct booking groups based on reservation characteristics, providing further insights into customer behavior and cancellation risk.
+We also applied K-means clustering to explore booking patterns in the dataset.
 
-## Dataset
+The project includes:
 
-We use the **Hotel Booking Demand** dataset, which contains reservation records
-from a City Hotel and a Resort Hotel in Portugal.
+* Exploratory Data Analysis (EDA)
+* Data preprocessing
+* Feature engineering
+* Classification modeling
+* Clustering analysis
+* Model evaluation
 
-- Number of records: 119,390
-- Number of columns: 32
-- Prediction target: `is_canceled`
-  - `0`: the booking was not canceled
-  - `1`: the booking was canceled
+---
 
-The raw dataset includes numerical and categorical features, as well as missing values, duplicate rows, and a few suspicious records that need to be examined during preprocessing.
+# Dataset
 
-Sources:
+This project uses the **Hotel Booking Demand** dataset, which contains hotel reservation records from Portugal.
 
-- Kaggle: [Hotel Booking Demand](https://www.kaggle.com/datasets/jessemostipak/hotel-booking-demand)
-- Original publication: Antonio, Almeida, and Nunes (2019),
-  [Hotel booking demand datasets](https://doi.org/10.1016/j.dib.2018.11.126)
+## Dataset Information
 
-## Analysis Plan
+* Number of records: 119,390
+* Number of features: 32
+* Target variable: `is_canceled`
 
-The main analysis task is a binary classification problem with `is_canceled` as the target variable. We plan to compare Logistic Regression, Decision Tree, and K-Nearest Neighbors models using k-fold cross validation. Since identifying bookings that may actually be canceled is important for hotel operations, recall and F1-score will be considered especially important, together with accuracy, precision, and a confusion matrix.
+The dataset contains:
 
-As an additional analysis, K-means clustering will be used to explore whether meaningful booking groups can be found and interpreted from a business perspective.
+* Numerical variables
+* Categorical variables
+* Missing values
+* Duplicate rows
+* Some suspicious records
 
-The project will proceed as follows:
+Dataset sources:
 
-1. Explore the dataset, including distributions, missing values, duplicates, unusual values, and cancellation patterns.
-2. Clean and preprocess the data, create useful features, encode categorical variables, and scale numerical variables when needed.
-3. Train and compare the classification models, then evaluate their results.
-4. Apply K-means clustering and interpret the characteristics of the identified booking groups.
+* https://www.kaggle.com/datasets/jessemostipak/hotel-booking-demand
+* https://doi.org/10.1016/j.dib.2018.11.126
 
-Because the purpose is to predict cancellation before the final booking outcome is known, post-outcome information such as `reservation_status` and `reservation_status_date` will not be used as model inputs.
+---
+
+# Models
+
+Classification models:
+
+* Logistic Regression
+* Decision Tree
+* K-Nearest Neighbors (KNN)
+
+Clustering model:
+
+* K-means clustering
+
+Evaluation methods:
+
+* Stratified 5-Fold Cross Validation
+* Accuracy
+* Precision
+* Recall
+* F1-score
+* ROC-AUC
+
+---
+
+# Data Preprocessing
+
+Main preprocessing steps:
+
+* Missing value handling
+* Feature engineering
+* Feature scaling
+* Categorical encoding
+* Leakage prevention
+
+Created features:
+
+* `total_guests`
+* `total_stays`
+* `is_family`
+
+Removed columns:
+
+* `reservation_status`
+* `reservation_status_date`
+* `assigned_room_type`
+
+Scaling methods:
+
+* StandardScaler
+* MinMaxScaler
+
+Encoding methods:
+
+* OneHotEncoder
+* OrdinalEncoder
+
+---
+
+# Model Comparison
+
+A reusable function was created to compare different preprocessing methods and machine learning models.
+
+The comparison includes:
+
+* Different scaling methods
+* Different encoding methods
+* Multiple classification models
+* Different parameter settings
+
+The results are compared using F1-score and balanced accuracy.
+
+---
+
+# Project Structure
+
+```text
+DataScience_HotelBooking/
+|
+|-- data/
+|   `-- raw/
+|       `-- hotel_bookings.csv
+|
+|-- src/
+|   |-- project_utils.py
+|   |-- 01_data_exploration.py
+|   |-- 02_data_preprocessing.py
+|   |-- 03_classification_modeling.py
+|   |-- 04_kmeans_clustering.py
+|   `-- 05_open_source_model_comparison.py
+|
+|-- .gitignore
+`-- README.md
+```
