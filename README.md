@@ -122,13 +122,18 @@ DataScience_HotelBooking/
 |-- data/
 |       `-- hotel_bookings.csv
 |
+|-- notebook/
+|       `-- Hotel_Booking_Cancellation_Project.ipynb
+|
 |-- src/
-|   |-- project_utils.py
-|   |-- 01_data_exploration.py
-|   |-- 02_data_preprocessing.py
-|   |-- 03_classification_modeling.py
-|   |-- 04_kmeans_clustering.py
-|   `-- 05_open_source_model_comparison.py
+|   |-- ProjectUtils.py
+|   |-- 01_DataExploration.py
+|   |-- 02_DataPreprocessing.py
+|   |-- 03_ClassificationModeling.py
+|   |-- 04_KmeansClustering.py
+|   `-- 05_ModelComparison.py
+|
+|-- library.md
 |
 `-- README.md
 ```
