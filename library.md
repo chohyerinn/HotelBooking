@@ -112,3 +112,24 @@ Parameters used:
 
 * `handle_unknown="use_encoded_value"`: allows unseen validation categories to be encoded.
 * `unknown_value=-1`: represents categories that were not present when the encoder was fitted.
+
+## `np.log1p`
+
+`np.log1p` was used to compress skewed numeric features before clustering.
+
+`np.log1p(x)` computes `log(1 + x)` element-wise, which reduces the influence of very large values while still allowing zeros. It is used because clustering features such as `lead_time`, `adr`, and `total_stays` are right-skewed, and without compression a few extreme bookings would dominate the distance calculation in K-means.
+
+Parameters used:
+
+* `df[cluster_features]`: a DataFrame of numeric clustering features; the transformation is applied element-wise before standardization.
+
+## `roc_auc_score`
+
+`roc_auc_score` was used as an additional evaluation metric alongside `RocCurveDisplay`.
+
+`roc_auc_score` returns the area under the ROC curve, summarizing how well a model separates canceled from non-canceled bookings across all probability thresholds. A score of 0.5 indicates random guessing and 1.0 indicates perfect separation.
+
+Parameters used:
+
+* `actual`: true cancellation labels.
+* `probability`: predicted probability for the canceled class, obtained from `predict_proba`.
