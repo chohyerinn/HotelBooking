@@ -47,8 +47,10 @@ def compare_booking_models(
     models = [
         (
             "Logistic Regression",
-            "C=1.0, class_weight=None",
-            LogisticRegression(C=1.0, solver="liblinear", max_iter=2000),
+            "C=0.1, class_weight=balanced",
+            LogisticRegression(
+                C=0.1, class_weight="balanced", solver="liblinear", max_iter=2000
+            ),
         ),
         (
             "Logistic Regression",
@@ -59,8 +61,10 @@ def compare_booking_models(
         ),
         (
             "Decision Tree",
-            "max_depth=5, class_weight=None",
-            DecisionTreeClassifier(max_depth=5, random_state=random_state),
+            "max_depth=3, class_weight=balanced",
+            DecisionTreeClassifier(
+                max_depth=3, class_weight="balanced", random_state=random_state
+            ),
         ),
         (
             "Decision Tree",
@@ -69,11 +73,23 @@ def compare_booking_models(
                 max_depth=5, class_weight="balanced", random_state=random_state
             ),
         ),
+        (
+            "Decision Tree",
+            "max_depth=8, class_weight=balanced",
+            DecisionTreeClassifier(
+                max_depth=8, class_weight="balanced", random_state=random_state
+            ),
+        ),
         ("K-Nearest Neighbors", "n_neighbors=5", KNeighborsClassifier(n_neighbors=5)),
         (
             "K-Nearest Neighbors",
             "n_neighbors=11",
             KNeighborsClassifier(n_neighbors=11),
+        ),
+        (
+            "K-Nearest Neighbors",
+            "n_neighbors=21",
+            KNeighborsClassifier(n_neighbors=21),
         ),
     ]
 
