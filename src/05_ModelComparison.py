@@ -13,18 +13,15 @@ from sklearn.metrics import (
     f1_score,
     precision_score,
     recall_score,
-    roc_auc_score,
+    roc_auc_score
 )
-from sklearn.model_selection import StratifiedKFold, train_test_split
+from sklearn.model_selection import StratifiedKFold
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import MinMaxScaler, OneHotEncoder, OrdinalEncoder, StandardScaler
 from sklearn.tree import DecisionTreeClassifier
 
-from ProjectUtils import load_cleaned_data, take_stratified_sample
-
-
-RANDOM_STATE = 42
+from project_utils import load_cleaned_data, take_stratified_sample, train_test_split
 
 
 def compare_booking_models(
@@ -33,54 +30,42 @@ def compare_booking_models(
     sample_size=20_000,
     test_size=0.2,
     cv_splits=5,
-    random_state=RANDOM_STATE,
+    random_state=42,
 ):
-    """Compare preprocessing/model combinations and evaluate the best model.
+    """Compare preprocessing and classification model combinations.
 
-    This function implements the open source contribution workflow in one
-    reusable entry point. It creates one training/test split, evaluates
-    combinations of scaling, encoding, model, and model parameters on the
-    training data with stratified k-fold cross-validation, selects the best
-    combination by mean F1-score and balanced accuracy, and evaluates only
-    that selected pipeline on the untouched test set.
+    The function samples a cleaned booking dataset, creates a stratified
+    training/test split, evaluates preprocessing and model combinations using
+    stratified k-fold cross-validation on the training set, and evaluates the
+    selected best model on the untouched test set.
 
     Parameters
     ----------
     cleaned_data : pandas.DataFrame
-        Cleaned booking dataset containing predictor columns and the target
-        column. Post-outcome leakage columns should already be removed.
+        Cleaned booking dataset containing predictor columns and the binary
+        target column. Outcome leakage columns must already be removed.
     target_column : str, default="is_canceled"
-        Name of the binary classification target column.
+        Name of the classification target column.
     sample_size : int or None, default=20000
-        Number of stratified observations used for the comparison. If None or
-        greater than the dataset size, all available observations are used.
+        Number of stratified records used for comparison. If ``None`` or
+        greater than the dataset size, all available records are used.
     test_size : float, default=0.2
-        Fraction of sampled observations held out for final model evaluation.
+        Fraction of sampled records reserved for final test evaluation.
     cv_splits : int, default=5
-        Number of stratified cross-validation folds used on the training set.
+        Number of stratified cross-validation folds applied to training data.
     random_state : int, default=42
-        Random seed used for sampling, splitting, and decision tree fitting.
+        Random seed used for sampling, splitting, and tree models.
 
     Returns
     -------
     dict
-        Dictionary containing:
-
-        - ``all_results`` : pandas.DataFrame
-          Cross-validation scores for every tested combination.
-        - ``top_five`` : pandas.DataFrame
-          Five highest-ranked combinations by F1-score and balanced accuracy.
-        - ``selected_combination`` : pandas.Series
-          Configuration and validation scores of the selected combination.
-        - ``test_scores`` : pandas.Series
-          Final held-out test scores for the selected model.
-        - ``best_model`` : sklearn.pipeline.Pipeline
-          Fitted preprocessing and classification pipeline.
+        Results containing all cross-validation combinations, the five
+        highest-ranked combinations, the selected combination, final test
+        scores, and the fitted best pipeline.
 
     Examples
     --------
-    >>> cleaned_df = load_cleaned_data()
-    >>> output = compare_booking_models(cleaned_df)
+    >>> output = compare_booking_models(load_cleaned_data())
     >>> output["top_five"][["model", "f1_score"]]
     >>> output["test_scores"]["roc_auc"]
     """
@@ -263,13 +248,12 @@ def compare_booking_models(
     }
 
 
-if __name__ == "__main__":
-    output = compare_booking_models(load_cleaned_data())
-    selected = output["selected_combination"]
+output = compare_booking_models(load_cleaned_data())
+selected = output["selected_combination"]
 
-    print("Top five combinations based on training CV F1-score")
-    print(output["top_five"].round(4).to_string(index=False))
-    print("\nFinal selected combination")
-    print(selected[["scaling", "encoding", "model", "parameters"]].to_string())
-    print("\nFinal test set results")
-    print(output["test_scores"].round(4).to_string())
+print("Top five combinations based on training CV F1-score")
+print(output["top_five"].round(4).to_string(index=False))
+print("\nFinal selected combination")
+print(selected[["scaling", "encoding", "model", "parameters"]].to_string())
+print("\nFinal test set results")
+print(output["test_scores"].round(4).to_string())
