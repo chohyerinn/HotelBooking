@@ -44,19 +44,12 @@ On the test set the model lands around 0.83 accuracy and 0.79 F1, with ROC-AUC a
 
 As a stability check we retrained the same configuration on the full training set and evaluated it on a separate test set. The scores stayed close to the sample-based ones, confirming that the sample-based selection generalizes.
 
-## demo (bonus)
-
-`06_practical_demo.py` is a small self-contained web app that loads the cleaned data, trains the selected final model on it, and exposes a form at `http://127.0.0.1:8502`. You can plug in lead time, ADR, hotel type, number of guests, etc. and get back a cancellation probability with a risk label (안정적 / 확인 권장 / 주의 필요).
-
-Training takes about ten seconds on first launch, then the server stays up. Only Python's standard library + scikit-learn + pandas — no Flask, no Streamlit.
-
-Note: the term project spec explicitly excludes deployment ("must apply every step of the end-to-end Big Data process except data curation and deployment"). This demo is a self-learned bonus to make the model tangible during the presentation, not a deployment claim. It runs on localhost.
-
 ## Project structure
 
 ```
 DataScience_HotelBooking/
 ├── data/
+│   ├── raw/
 │   └── hotel_bookings.csv
 ├── notebook/
 │   └── Hotel_Booking_Cancellation.ipynb
@@ -87,3 +80,9 @@ Tested with:
 - Kaggle mirror: https://www.kaggle.com/datasets/jessemostipak/hotel-booking-demand
 
 Code patterns for the preprocessing comparison function are loosely based on the scikit-learn `Pipeline` + `ColumnTransformer` examples in the official user guide.
+
+## demo (bonus)
+
+`06_practical_demo.py` is a lightweight local demo that loads the cleaned dataset, trains the final model, and provides cancellation predictions through a localhost web interface (`127.0.0.1:8502`).
+
+This optional demo was created to make the prediction results easier to interpret during the presentation.
