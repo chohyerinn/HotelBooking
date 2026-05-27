@@ -18,25 +18,24 @@ from sklearn.metrics import (
     recall_score,
     roc_auc_score,
 )
-from sklearn.model_selection import StratifiedKFold, train_test_split
+from sklearn.model_selection import StratifiedKFold
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.tree import DecisionTreeClassifier
 
-from ProjectUtils import load_cleaned_data, take_stratified_sample
-
+from project_utils import load_cleaned_data, take_stratified_sample, train_test_split
 
 RANDOM_STATE = 42
 df = take_stratified_sample(load_cleaned_data(), 20_000, RANDOM_STATE)
 X = df.drop(columns="is_canceled")
 y = df["is_canceled"]
-X_train, _, y_train, _ = train_test_split(
+X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, stratify=y, random_state=RANDOM_STATE
 )
 
-categorical_columns = X_train.select_dtypes(include=["object", "string"]).columns.tolist()
-numerical_columns = X_train.select_dtypes(include=["number"]).columns.tolist()
+categorical_columns = X.select_dtypes(include=["object", "string"]).columns.tolist()
+numerical_columns = X.select_dtypes(include=["number"]).columns.tolist()
 
 # Scaling keeps distance-based KNN and coefficient-based models comparable.
 preprocessor = ColumnTransformer(
@@ -131,9 +130,10 @@ fig.tight_layout()
 plt.show()
 
 results_df = pd.DataFrame(results).sort_values("f1_score", ascending=False)
-print("5-Fold cross-validation results on the training set")
+print("5-Fold cross-validation results")
 print(results_df.round(4).to_string(index=False))
-print("\nBest basic model based on training CV F1-score:", results_df.iloc[0]["model"])
+best_model_name = results_df.iloc[0]["model"]
+print("\nBest basic model based on training CV F1-score:", best_model_name)
 
 tree_pipeline = Pipeline(
     [("preprocessor", preprocessor), ("model", models["Decision Tree"])]
