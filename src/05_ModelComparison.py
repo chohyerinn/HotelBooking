@@ -27,8 +27,90 @@ from ProjectUtils import load_cleaned_data, take_stratified_sample
 RANDOM_STATE = 42
 
 
-def get_models(random_state=RANDOM_STATE):
-    return [
+def compare_booking_models(
+    cleaned_data,
+    target_column="is_canceled",
+    sample_size=20_000,
+    test_size=0.2,
+    cv_splits=5,
+    random_state=RANDOM_STATE,
+):
+    """Compare preprocessing/model combinations and evaluate the best model.
+
+    This function implements the open source contribution workflow in one
+    reusable entry point. It creates one training/test split, evaluates
+    combinations of scaling, encoding, model, and model parameters on the
+    training data with stratified k-fold cross-validation, selects the best
+    combination by mean F1-score and balanced accuracy, and evaluates only
+    that selected pipeline on the untouched test set.
+
+    Parameters
+    ----------
+    cleaned_data : pandas.DataFrame
+        Cleaned booking dataset containing predictor columns and the target
+        column. Post-outcome leakage columns should already be removed.
+    target_column : str, default="is_canceled"
+        Name of the binary classification target column.
+    sample_size : int or None, default=20000
+        Number of stratified observations used for the comparison. If None or
+        greater than the dataset size, all available observations are used.
+    test_size : float, default=0.2
+        Fraction of sampled observations held out for final model evaluation.
+    cv_splits : int, default=5
+        Number of stratified cross-validation folds used on the training set.
+    random_state : int, default=42
+        Random seed used for sampling, splitting, and decision tree fitting.
+
+    Returns
+    -------
+    dict
+        Dictionary containing:
+
+        - ``all_results`` : pandas.DataFrame
+          Cross-validation scores for every tested combination.
+        - ``top_five`` : pandas.DataFrame
+          Five highest-ranked combinations by F1-score and balanced accuracy.
+        - ``selected_combination`` : pandas.Series
+          Configuration and validation scores of the selected combination.
+        - ``test_scores`` : pandas.Series
+          Final held-out test scores for the selected model.
+        - ``best_model`` : sklearn.pipeline.Pipeline
+          Fitted preprocessing and classification pipeline.
+
+    Examples
+    --------
+    >>> cleaned_df = load_cleaned_data()
+    >>> output = compare_booking_models(cleaned_df)
+    >>> output["top_five"][["model", "f1_score"]]
+    >>> output["test_scores"]["roc_auc"]
+    """
+    if target_column not in cleaned_data.columns:
+        raise ValueError(f"Target column '{target_column}' is not in cleaned_data.")
+    if not 0 < test_size < 1:
+        raise ValueError("test_size must be a float between 0 and 1.")
+    if cv_splits < 2:
+        raise ValueError("cv_splits must be at least 2.")
+
+    data = take_stratified_sample(cleaned_data, sample_size, random_state)
+    X = data.drop(columns=target_column)
+    y = data[target_column]
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=test_size, stratify=y, random_state=random_state
+    )
+
+    categorical_columns = X_train.select_dtypes(
+        include=["object", "string"]
+    ).columns.tolist()
+    numerical_columns = X_train.select_dtypes(include=["number"]).columns.tolist()
+
+    scalers = {"StandardScaler": StandardScaler(), "MinMaxScaler": MinMaxScaler()}
+    encoders = {
+        "OneHotEncoder": OneHotEncoder(handle_unknown="ignore"),
+        "OrdinalEncoder": OrdinalEncoder(
+            handle_unknown="use_encoded_value", unknown_value=-1
+        ),
+    }
+    models = [
         (
             "Logistic Regression",
             "C=0.1, class_weight=balanced",
@@ -77,136 +159,117 @@ def get_models(random_state=RANDOM_STATE):
         ),
     ]
 
-
-def make_pipeline(X, scaler, encoder, model):
-    categorical_columns = X.select_dtypes(include=["object", "string"]).columns.tolist()
-    numerical_columns = X.select_dtypes(include=["number"]).columns.tolist()
-    preprocessor = ColumnTransformer(
-        [
-            (
-                "numeric",
-                Pipeline(
-                    [
-                        ("imputer", SimpleImputer(strategy="median")),
-                        ("scaler", clone(scaler)),
-                    ]
+    def make_pipeline(scaler, encoder, model):
+        preprocessor = ColumnTransformer(
+            [
+                (
+                    "numeric",
+                    Pipeline(
+                        [
+                            ("imputer", SimpleImputer(strategy="median")),
+                            ("scaler", clone(scaler)),
+                        ]
+                    ),
+                    numerical_columns,
                 ),
-                numerical_columns,
-            ),
-            (
-                "categorical",
-                Pipeline(
-                    [
-                        ("imputer", SimpleImputer(strategy="most_frequent")),
-                        ("encoder", clone(encoder)),
-                    ]
+                (
+                    "categorical",
+                    Pipeline(
+                        [
+                            ("imputer", SimpleImputer(strategy="most_frequent")),
+                            ("encoder", clone(encoder)),
+                        ]
+                    ),
+                    categorical_columns,
                 ),
-                categorical_columns,
-            ),
-        ]
-    )
-    return Pipeline([("preprocessor", preprocessor), ("model", clone(model))])
+            ]
+        )
+        return Pipeline([("preprocessor", preprocessor), ("model", clone(model))])
 
-
-def compare_booking_models(X, y, cv_splits=5, random_state=RANDOM_STATE):
-    """Compare preprocessing and model combinations using training data only."""
-    scalers = {"StandardScaler": StandardScaler(), "MinMaxScaler": MinMaxScaler()}
-    encoders = {
-        "OneHotEncoder": OneHotEncoder(handle_unknown="ignore"),
-        "OrdinalEncoder": OrdinalEncoder(
-            handle_unknown="use_encoded_value", unknown_value=-1
-        ),
-    }
     cv = StratifiedKFold(n_splits=cv_splits, shuffle=True, random_state=random_state)
-    results = []
-
+    result_rows = []
     for scaler_name, scaler in scalers.items():
         for encoder_name, encoder in encoders.items():
-            for model_name, parameters, model in get_models(random_state):
-                fold_results = []
-                for train_index, validation_index in cv.split(X, y):
-                    pipeline = make_pipeline(X, scaler, encoder, model)
-                    pipeline.fit(X.iloc[train_index], y.iloc[train_index])
-                    prediction = pipeline.predict(X.iloc[validation_index])
-                    actual = y.iloc[validation_index]
-                    fold_results.append(
+            for model_name, parameters, model in models:
+                fold_rows = []
+                for train_index, validation_index in cv.split(X_train, y_train):
+                    pipeline = make_pipeline(scaler, encoder, model)
+                    pipeline.fit(X_train.iloc[train_index], y_train.iloc[train_index])
+                    prediction = pipeline.predict(X_train.iloc[validation_index])
+                    actual = y_train.iloc[validation_index]
+                    fold_rows.append(
                         {
                             "accuracy": accuracy_score(actual, prediction),
-                            "balanced_accuracy": balanced_accuracy_score(actual, prediction),
-                            "precision": precision_score(actual, prediction, zero_division=0),
+                            "balanced_accuracy": balanced_accuracy_score(
+                                actual, prediction
+                            ),
+                            "precision": precision_score(
+                                actual, prediction, zero_division=0
+                            ),
                             "recall": recall_score(actual, prediction, zero_division=0),
                             "f1_score": f1_score(actual, prediction, zero_division=0),
                         }
                     )
 
-                scores = pd.DataFrame(fold_results).mean()
-                results.append(
+                mean_scores = pd.DataFrame(fold_rows).mean()
+                result_rows.append(
                     {
                         "scaling": scaler_name,
                         "encoding": encoder_name,
                         "model": model_name,
                         "parameters": parameters,
-                        **scores.to_dict(),
+                        **mean_scores.to_dict(),
                     }
                 )
 
-    return (
-        pd.DataFrame(results)
+    all_results = (
+        pd.DataFrame(result_rows)
         .sort_values(["f1_score", "balanced_accuracy"], ascending=False)
         .reset_index(drop=True)
     )
-
-
-def evaluate_selected_model(X_train, y_train, X_test, y_test, selected):
-    scalers = {"StandardScaler": StandardScaler(), "MinMaxScaler": MinMaxScaler()}
-    encoders = {
-        "OneHotEncoder": OneHotEncoder(handle_unknown="ignore"),
-        "OrdinalEncoder": OrdinalEncoder(
-            handle_unknown="use_encoded_value", unknown_value=-1
-        ),
-    }
-    model_lookup = {
-        (model_name, parameters): model
-        for model_name, parameters, model in get_models(RANDOM_STATE)
-    }
-    pipeline = make_pipeline(
-        X_train,
-        scalers[selected["scaling"]],
-        encoders[selected["encoding"]],
-        model_lookup[(selected["model"], selected["parameters"])],
+    top_five = all_results.head(5).copy()
+    selected_combination = all_results.iloc[0].copy()
+    selected_model = next(
+        model
+        for model_name, parameters, model in models
+        if model_name == selected_combination["model"]
+        and parameters == selected_combination["parameters"]
     )
-    pipeline.fit(X_train, y_train)
-    prediction = pipeline.predict(X_test)
-    probability = pipeline.predict_proba(X_test)[:, 1]
-    return pd.Series(
+    best_model = make_pipeline(
+        scalers[selected_combination["scaling"]],
+        encoders[selected_combination["encoding"]],
+        selected_model,
+    )
+    best_model.fit(X_train, y_train)
+    test_prediction = best_model.predict(X_test)
+    test_probability = best_model.predict_proba(X_test)[:, 1]
+    test_scores = pd.Series(
         {
-            "accuracy": accuracy_score(y_test, prediction),
-            "balanced_accuracy": balanced_accuracy_score(y_test, prediction),
-            "precision": precision_score(y_test, prediction, zero_division=0),
-            "recall": recall_score(y_test, prediction, zero_division=0),
-            "f1_score": f1_score(y_test, prediction, zero_division=0),
-            "roc_auc": roc_auc_score(y_test, probability),
+            "accuracy": accuracy_score(y_test, test_prediction),
+            "balanced_accuracy": balanced_accuracy_score(y_test, test_prediction),
+            "precision": precision_score(y_test, test_prediction, zero_division=0),
+            "recall": recall_score(y_test, test_prediction, zero_division=0),
+            "f1_score": f1_score(y_test, test_prediction, zero_division=0),
+            "roc_auc": roc_auc_score(y_test, test_probability),
         }
     )
 
+    return {
+        "all_results": all_results,
+        "top_five": top_five,
+        "selected_combination": selected_combination,
+        "test_scores": test_scores,
+        "best_model": best_model,
+    }
+
 
 if __name__ == "__main__":
-    df = take_stratified_sample(load_cleaned_data(), 20_000, RANDOM_STATE)
-    X = df.drop(columns="is_canceled")
-    y = df["is_canceled"]
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, stratify=y, random_state=RANDOM_STATE
-    )
-
-    results = compare_booking_models(X_train, y_train)
-    selected = results.iloc[0]
-    test_results = evaluate_selected_model(
-        X_train, y_train, X_test, y_test, selected
-    )
+    output = compare_booking_models(load_cleaned_data())
+    selected = output["selected_combination"]
 
     print("Top five combinations based on training CV F1-score")
-    print(results.head(5).round(4).to_string(index=False))
+    print(output["top_five"].round(4).to_string(index=False))
     print("\nFinal selected combination")
     print(selected[["scaling", "encoding", "model", "parameters"]].to_string())
     print("\nFinal test set results")
-    print(test_results.round(4).to_string())
+    print(output["test_scores"].round(4).to_string())

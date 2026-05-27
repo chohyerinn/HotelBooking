@@ -2,6 +2,55 @@
 
 This document explains the additional Python and scikit-learn tools used in the project, including the parameters applied in the source code.
 
+## Open Source Contribution Function: `compare_booking_models`
+
+`compare_booking_models` is the single public entry point for the reusable model-comparison contribution in `src/05_ModelComparison.py`. Given a cleaned booking dataset, it completes the full evaluation workflow without requiring users to repeat preprocessing, training, model selection, or testing code.
+
+The function performs the following tasks:
+
+1. Draws a stratified sample and makes a final training/test split.
+2. Compares combinations of `StandardScaler` and `MinMaxScaler`, `OneHotEncoder` and `OrdinalEncoder`, and the supported Logistic Regression, Decision Tree, and K-Nearest Neighbors parameter settings.
+3. Evaluates every combination using stratified k-fold cross-validation on the training set only.
+4. Ranks the combinations by mean F1-score and balanced accuracy and returns the top five.
+5. Fits the best-ranked pipeline on the full training set and evaluates it once on the held-out test set.
+
+Parameters used:
+
+* `cleaned_data`: cleaned `pandas.DataFrame` containing predictors and `is_canceled`.
+* `target_column="is_canceled"`: binary outcome column to predict.
+* `sample_size=20_000`: number of stratified observations used; set to `None` to use all rows.
+* `test_size=0.2`: held-out proportion used for final testing.
+* `cv_splits=5`: number of stratified cross-validation folds.
+* `random_state=42`: seed for repeatable sampling, splitting, and tree fitting.
+
+Returned values:
+
+* `all_results`: cross-validation scores for all preprocessing/model combinations.
+* `top_five`: the five highest-ranked combinations.
+* `selected_combination`: the selected configuration and its cross-validation scores.
+* `test_scores`: final held-out accuracy, balanced accuracy, precision, recall, F1-score, and ROC-AUC.
+* `best_model`: the fitted scikit-learn pipeline for the selected configuration.
+
+Example:
+
+```python
+import importlib.util
+import sys
+
+sys.path.insert(0, "src")
+spec = importlib.util.spec_from_file_location(
+    "model_comparison", "src/05_ModelComparison.py"
+)
+model_comparison = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(model_comparison)
+
+output = model_comparison.compare_booking_models(
+    model_comparison.load_cleaned_data()
+)
+print(output["top_five"])
+print(output["test_scores"])
+```
+
 ## `ColumnTransformer`
 
 `ColumnTransformer` was used in the classification modeling and model comparison steps.
