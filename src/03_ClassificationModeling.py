@@ -18,22 +18,25 @@ from sklearn.metrics import (
     recall_score,
     roc_auc_score,
 )
-from sklearn.model_selection import StratifiedKFold
+from sklearn.model_selection import StratifiedKFold, train_test_split
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.tree import DecisionTreeClassifier
 
-from project_utils import load_cleaned_data, take_stratified_sample
+from ProjectUtils import load_cleaned_data, take_stratified_sample
 
 
 RANDOM_STATE = 42
 df = take_stratified_sample(load_cleaned_data(), 20_000, RANDOM_STATE)
 X = df.drop(columns="is_canceled")
 y = df["is_canceled"]
+X_train, _, y_train, _ = train_test_split(
+    X, y, test_size=0.2, stratify=y, random_state=RANDOM_STATE
+)
 
-categorical_columns = X.select_dtypes(include=["object", "string"]).columns.tolist()
-numerical_columns = X.select_dtypes(include=["number"]).columns.tolist()
+categorical_columns = X_train.select_dtypes(include=["object", "string"]).columns.tolist()
+numerical_columns = X_train.select_dtypes(include=["number"]).columns.tolist()
 
 # Scaling keeps distance-based KNN and coefficient-based models comparable.
 preprocessor = ColumnTransformer(
@@ -81,12 +84,12 @@ for model_name, model in models.items():
     predicted_values = []
     probability_values = []
 
-    for train_index, test_index in cv.split(X, y):
+    for train_index, test_index in cv.split(X_train, y_train):
         pipeline = Pipeline([("preprocessor", preprocessor), ("model", model)])
-        pipeline.fit(X.iloc[train_index], y.iloc[train_index])
-        prediction = pipeline.predict(X.iloc[test_index])
-        probability = pipeline.predict_proba(X.iloc[test_index])[:, 1]
-        actual = y.iloc[test_index]
+        pipeline.fit(X_train.iloc[train_index], y_train.iloc[train_index])
+        prediction = pipeline.predict(X_train.iloc[test_index])
+        probability = pipeline.predict_proba(X_train.iloc[test_index])[:, 1]
+        actual = y_train.iloc[test_index]
 
         fold_results.append(
             {
@@ -128,14 +131,14 @@ fig.tight_layout()
 plt.show()
 
 results_df = pd.DataFrame(results).sort_values("f1_score", ascending=False)
-print("5-Fold cross-validation results")
+print("5-Fold cross-validation results on the training set")
 print(results_df.round(4).to_string(index=False))
-print("\nBest model based on F1-score:", results_df.iloc[0]["model"])
+print("\nBest basic model based on training CV F1-score:", results_df.iloc[0]["model"])
 
 tree_pipeline = Pipeline(
     [("preprocessor", preprocessor), ("model", models["Decision Tree"])]
 )
-tree_pipeline.fit(X, y)
+tree_pipeline.fit(X_train, y_train)
 
 feature_names = tree_pipeline.named_steps["preprocessor"].get_feature_names_out()
 importance_df = pd.DataFrame(

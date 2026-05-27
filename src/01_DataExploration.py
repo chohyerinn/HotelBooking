@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 
-from project_utils import load_raw_data
+from ProjectUtils import load_raw_data
 
 
 df = load_raw_data()

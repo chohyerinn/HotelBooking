@@ -11,7 +11,7 @@ from sklearn.decomposition import PCA
 from sklearn.metrics import silhouette_score
 from sklearn.preprocessing import StandardScaler
 
-from project_utils import load_cleaned_data
+from ProjectUtils import load_cleaned_data
 
 
 RANDOM_STATE = 42

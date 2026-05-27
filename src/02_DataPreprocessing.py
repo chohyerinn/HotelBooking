@@ -1,6 +1,6 @@
 import pandas as pd
 
-from project_utils import LEAKAGE_COLUMNS, clean_booking_data, load_raw_data
+from ProjectUtils import LEAKAGE_COLUMNS, clean_booking_data, load_raw_data
 
 
 raw_df = load_raw_data()
