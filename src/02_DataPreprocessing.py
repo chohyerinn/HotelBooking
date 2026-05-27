@@ -1,6 +1,6 @@
 import pandas as pd
 
-from ProjectUtils import LEAKAGE_COLUMNS, clean_booking_data, load_raw_data
+from project_utils import LEAKAGE_COLUMNS, clean_booking_data, load_raw_data
 
 
 raw_df = load_raw_data()
@@ -14,7 +14,6 @@ summary = pd.Series(
         "raw_cancellation_rate_percent": raw_df["is_canceled"].mean() * 100,
         "cleaned_cancellation_rate_percent": cleaned_df["is_canceled"].mean() * 100,
         "duplicate_rows_kept_for_review": raw_df.duplicated().sum(),
-        "remaining_zero_night_bookings": (cleaned_df["total_stays"] == 0).sum(),
         "remaining_missing_values": cleaned_df.isnull().sum().sum(),
     }
 )
@@ -27,7 +26,7 @@ print("- Filled missing children values with 0")
 print("  Missing children values are treated as no children in the reservation.")
 print("- Filled missing country, agent, and company values with labels")
 print("- Created total_guests, total_stays, and is_family")
-print("- Removed rows with zero guests or negative ADR")
+print("- Removed rows with zero guests, zero stay nights, or negative ADR")
 print("- Kept identical rows because there is no booking ID to prove duplication")
 print("- Dropped leakage columns:", LEAKAGE_COLUMNS)
 print("- Encoding and scaling are applied in the modeling pipeline")
