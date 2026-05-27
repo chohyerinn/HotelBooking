@@ -173,7 +173,6 @@ Computes `log(1 + x)` element-wise. We apply it to right-skewed columns (`lead_t
 
 Applied to: the DataFrame of numeric clustering features.
 
----
 
 
 
