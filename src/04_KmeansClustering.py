@@ -11,7 +11,7 @@ from sklearn.decomposition import PCA
 from sklearn.metrics import silhouette_score
 from sklearn.preprocessing import StandardScaler
 
-from ProjectUtils import load_cleaned_data
+from project_utils import load_cleaned_data
 
 
 RANDOM_STATE = 42
@@ -79,8 +79,8 @@ unlabeled_clusters = set(cluster_summary.index)
 naming_rules = [
     ("booking_changes", "idxmax", "Booking-change bookings"),
     ("total_of_special_requests", "idxmax", "Special-request bookings"),
-    ("lead_time", "idxmax", "Long-lead bookings"),
     ("lead_time", "idxmin", "Short-lead bookings"),
+    ("lead_time", "idxmax", "Long-lead bookings"),
 ]
 for column, selector, name in naming_rules:
     if not unlabeled_clusters:
