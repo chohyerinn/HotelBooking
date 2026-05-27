@@ -8,8 +8,6 @@ This document explains the additional Python and scikit-learn tools used in the 
 
 `ColumnTransformer` applies different preprocessing steps to selected groups of columns within one object. It is used because numeric booking fields require imputation and scaling, while categorical booking fields require imputation and encoding.
 
-Parameters used:
-
 * `transformers`: a list of `(name, transformer, columns)` tuples.
 * `"numeric"`: applies a numeric `Pipeline` to `numerical_columns`.
 * `"categorical"`: applies a categorical `Pipeline` to `categorical_columns`.
@@ -19,8 +17,6 @@ Parameters used:
 `Pipeline` was used to connect preprocessing and classification during model evaluation.
 
 `Pipeline` connects preprocessing steps and a model in a fixed order. In cross-validation, the preprocessing steps are fitted on each training fold only, which helps prevent data leakage from validation data.
-
-Parameters used:
 
 * `steps`: a list of `(name, transformer or model)` tuples.
 * Preprocessing pipelines use `("imputer", ...)`, followed by `("scaler", ...)` or `("encoder", ...)`.
@@ -32,8 +28,6 @@ Parameters used:
 
 `SimpleImputer` replaces remaining missing values before a model is fitted. This allows every transformed row to be passed into scikit-learn models without missing-value errors.
 
-Parameters used:
-
 * `strategy="median"`: fills missing numeric values with the median of the training data.
 * `strategy="most_frequent"`: fills missing categorical values with the most frequent training value.
 
@@ -43,23 +37,25 @@ Parameters used:
 
 `StratifiedKFold` creates cross-validation folds while preserving approximately the same cancellation and non-cancellation ratio in every fold. Regular `KFold` splits rows without guaranteeing this class balance.
 
-Parameters used:
-
 * `n_splits=5` or `n_splits=cv_splits`: divides data into five validation rounds by default.
 * `shuffle=True`: randomizes rows before assigning folds.
 * `random_state`: keeps the shuffled split reproducible.
 
-Method used:
+* `split(X, y)`: returns training and validation indices while using `y` to preserve class proportions.
 
-* `split(X, y)`: returns training and test indices while using `y` to preserve class proportions.
+## `clone`
+
+`clone` was used when creating pipelines for model comparison.
+
+`clone` creates a new estimator with the same parameter settings but without previously learned results. This allows each scaling, encoding, and model combination to be evaluated independently during cross-validation.
+
+* `estimator`: the scaler, encoder, or classification model copied before fitting.
 
 ## `balanced_accuracy_score`
 
 `balanced_accuracy_score` was used when comparing classification performance.
 
 `balanced_accuracy_score` evaluates a classifier by averaging recall for each class. It is useful here because canceled and non-canceled bookings do not occur in exactly equal proportions.
-
-Parameters used:
 
 * `actual`: true cancellation labels.
 * `prediction`: predicted cancellation labels.
@@ -69,8 +65,6 @@ Parameters used:
 `RocCurveDisplay` was used to compare the classification models visually.
 
 `RocCurveDisplay` visualizes the trade-off between true positive rate and false positive rate across classification thresholds.
-
-Method and parameters used:
 
 * `from_predictions(actual, probability, name=model_name, ax=ax)`
 * `actual`: true labels.
@@ -84,8 +78,6 @@ Method and parameters used:
 
 `silhouette_score` measures whether samples are close to their assigned cluster and separated from other clusters. Larger scores indicate clearer clustering structure.
 
-Parameters used:
-
 * `X_scaled`: standardized clustering features.
 * `labels`: cluster labels predicted by K-means.
 * `sample_size=10_000`: evaluates a sample to reduce computation time on the full dataset.
@@ -97,8 +89,6 @@ Parameters used:
 
 `PCA` reduces several numeric clustering features to a smaller set of components that retain major variation in the data. Here it is used only to display clusters in a two-dimensional scatter plot.
 
-Parameters and method used:
-
 * `n_components=2`: creates two plotted axes, `PC1` and `PC2`.
 * `fit_transform(X_scaled)`: learns the projection from scaled features and transforms the rows.
 
@@ -107,8 +97,6 @@ Parameters and method used:
 `OrdinalEncoder` was tested as an alternative categorical encoding method.
 
 `OrdinalEncoder` converts each categorical value to a numeric code. It is evaluated as an alternative to one-hot encoding in the model comparison function.
-
-Parameters used:
 
 * `handle_unknown="use_encoded_value"`: allows unseen validation categories to be encoded.
 * `unknown_value=-1`: represents categories that were not present when the encoder was fitted.
@@ -119,17 +107,32 @@ Parameters used:
 
 `np.log1p(x)` computes `log(1 + x)` element-wise, which reduces the influence of very large values while still allowing zeros. It is used because clustering features such as `lead_time`, `adr`, and `total_stays` are right-skewed, and without compression a few extreme bookings would dominate the distance calculation in K-means.
 
-Parameters used:
-
 * `df[cluster_features]`: a DataFrame of numeric clustering features; the transformation is applied element-wise before standardization.
 
 ## `roc_auc_score`
 
-`roc_auc_score` was used as an additional evaluation metric alongside `RocCurveDisplay`.
+`roc_auc_score` was used in model comparison and in the final test set evaluation.
 
 `roc_auc_score` returns the area under the ROC curve, summarizing how well a model separates canceled from non-canceled bookings across all probability thresholds. A score of 0.5 indicates random guessing and 1.0 indicates perfect separation.
 
-Parameters used:
-
 * `actual`: true cancellation labels.
 * `probability`: predicted probability for the canceled class, obtained from `predict_proba`.
+
+## `feature_importances_`
+
+`feature_importances_` was used to interpret the Decision Tree model.
+
+`feature_importances_` provides the relative contribution of each feature to the model's prediction decisions. In this project, it is used to identify which booking variables have the greatest influence on cancellation prediction.
+
+* `feature`: the name of each input variable after preprocessing.
+* `importance`: the contribution score assigned to each feature by the fitted Decision Tree model.
+
+## `predict_proba`
+
+`predict_proba` was used when evaluating classification models.
+
+`predict_proba` returns the estimated probability for each class instead of only returning a predicted label. In this project, the predicted probability of class `1` is used to measure cancellation risk and calculate ROC-AUC.
+
+* `X`: the booking feature data used to generate predicted class probabilities.
+
+* `[:, 1]`: selects the predicted probability that a booking is canceled.
