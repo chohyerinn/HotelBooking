@@ -62,8 +62,8 @@ DataScience_HotelBooking/
 │   ├── 04_kmeans_clustering.py
 │   ├── 05_open_source_model_comparison.py
 │   └── 06_practical_demo.py
-├── library.md
-└── README.md
+├── README.md
+└── library.md
 ```
 
 `library.md` lists every non-trivial library, class, and method used in the project with a short explanation, per the term project rubric.
