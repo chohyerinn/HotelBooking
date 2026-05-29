@@ -53,6 +53,7 @@ DataScience_HotelBooking/
 │   └── hotel_bookings.csv
 ├── notebook/
 │   └── Hotel_Booking_Cancellation.ipynb
+├── output/
 ├── src/
 │   ├── project_utils.py
 │   ├── 01_data_exploration.py
